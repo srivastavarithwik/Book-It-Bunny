@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book-It-Bunny</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #f0f0f0;
+      --muted: #888;
+      --accent: #e8b86d;
+      --accent-dim: #c49a4a;
+      --success: #7cb87c;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.02em;
+    }
+    .tagline {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+    .form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .form label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.25rem; }
+    .form input, .form select {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.95rem;
+    }
+    .form input:focus, .form select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(232, 184, 109, 0.2);
+    }
+    .field { flex: 1 1 140px; min-width: 0; }
+    .field--party { flex: 0 0 100px; }
+    .btn {
+      align-self: flex-end;
+      padding: 0.65rem 1.25rem;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--accent-dim); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      min-height: 1.5em;
+    }
+    .status.error { color: #d66; }
+    .status.loading { color: var(--accent); }
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .card h3 { margin: 0 0 0.35rem 0; font-size: 1.05rem; font-weight: 600; }
+    .card .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+    .card .address { font-size: 0.9rem; color: var(--muted); }
+    .card .phone { font-size: 0.85rem; margin-top: 0.35rem; }
+    .card .price { color: var(--accent); }
+    .card .rating { color: var(--success); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Book-It-Bunny</h1>
+    <p class="tagline">Find restaurants, then book (Phase 2).</p>
+
+    <form class="form" id="searchForm">
+      <div class="field">
+        <label for="location">Location</label>
+        <input type="text" id="location" name="location" placeholder="e.g. Boston, MA" value="Boston, MA" />
+      </div>
+      <div class="field">
+        <label for="cuisine">Cuisine</label>
+        <input type="text" id="cuisine" name="cuisine" placeholder="e.g. Italian (optional)" />
+      </div>
+      <div class="field field--party">
+        <label for="party_size">Party size</label>
+        <input type="number" id="party_size" name="party_size" min="1" max="20" value="2" />
+      </div>
+      <div class="field" style="flex: 0 0 auto;">
+        <label>&nbsp;</label>
+        <button type="submit" class="btn" id="submitBtn">Search</button>
+      </div>
+    </form>
+
+    <p class="status" id="status"></p>
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('searchForm');
+    const status = document.getElementById('status');
+    const results = document.getElementById('results');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function setStatus(msg, type = '') {
+      status.textContent = msg;
+      status.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function renderRestaurant(r) {
+      const meta = [r.cuisine || 'Restaurant', r.rating ? `★ ${r.rating}` : '', r.price || ''].filter(Boolean).join(' · ');
+      return `
+        <article class="card">
+          <h3>${escapeHtml(r.name || 'Unnamed')}</h3>
+          <div class="meta">${escapeHtml(meta)}</div>
+          ${r.address ? `<div class="address">${escapeHtml(r.address)}</div>` : ''}
+          ${r.phone ? `<div class="phone">${escapeHtml(r.phone)}</div>` : ''}
+        </article>
+      `;
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const location = document.getElementById('location').value.trim();
+      const cuisine = document.getElementById('cuisine').value.trim();
+      const party_size = parseInt(document.getElementById('party_size').value, 10) || 2;
+
+      setStatus('Searching…', 'loading');
+      submitBtn.disabled = true;
+      results.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location, cuisine, party_size }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+
+        const list = data.search_results || [];
+        if (list.length === 0) {
+          setStatus('No restaurants found. Try a different location or cuisine.');
+        } else {
+          setStatus(`Found ${list.length} restaurant${list.length === 1 ? '' : 's'}.`);
+          results.innerHTML = list.map(renderRestaurant).join('');
+        }
+      } catch (err) {
+        setStatus('Error: ' + (err.message || 'Request failed'), 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

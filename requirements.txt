@@ -1,0 +1,21 @@
+# Core
+python-dotenv>=1.0.0
+
+# MCP Server (tools_server)
+mcp>=1.0.0
+
+# Agent / orchestration (agent_brain)
+langgraph>=0.2.0
+langchain-openai>=0.2.0
+langchain-core>=0.3.0
+
+# HTTP for Yelp API (tools_server)
+httpx>=0.27.0
+
+# API and frontend (expose agent to UI)
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# Phase 2: browser-use for reservations (optional for now)
+# playwright>=1.49.0
+# browser-use
